@@ -1028,8 +1028,8 @@ stream {
             rewrite_by_lua_block {
                 balancer.rewrite()
             }
+            {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
             access_by_lua_block {
-                {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
                 local lua_resty_waf = require("resty.waf")
                 local waf = lua_resty_waf:new()
 
@@ -1070,25 +1070,25 @@ stream {
                 {{ end }}
 
                 waf:exec()
-                {{ end }}
             }
+            {{ end }}
+            {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
             header_filter_by_lua_block {
-                {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
                 local lua_resty_waf = require "resty.waf"
                 local waf = lua_resty_waf:new()
                 waf:exec()
-                {{ end }}
             }
+            {{ end }}
+            {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
             body_filter_by_lua_block {
-                {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
                 local lua_resty_waf = require "resty.waf"
                 local waf = lua_resty_waf:new()
                 waf:exec()
-                {{ end }}
             }
+            {{ end }}
 
+            {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
             log_by_lua_block {
-                {{ if shouldConfigureLuaRestyWAF $all.Cfg.DisableLuaRestyWAF $location.LuaRestyWAF.Mode }}
                 local lua_resty_waf = require "resty.waf"
                 local waf = lua_resty_waf:new()
                 waf:exec()
@@ -1096,8 +1096,8 @@ stream {
                 balancer.log()
                 {{ if $all.EnableMetrics }}
                 monitor.call()
-                {{ end }}
             }
+            {{ end }}
 
             {{ if (and (not (empty $server.SSLCert.PemFileName)) $all.Cfg.HSTS) }}
             if ($scheme = https) {
