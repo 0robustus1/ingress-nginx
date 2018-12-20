@@ -92,6 +92,35 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 			Expect(nginxConfig).Should(Equal(newNginxConfig))
 		})
 
+		It("handles endpoints only changes (down scaling of replicas)", func() {
+			var nginxConfig string
+			f.WaitForNginxConfiguration(func(cfg string) bool {
+				nginxConfig = cfg
+				return true
+			})
+
+			replicas := 2
+			err := framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", replicas, nil)
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(waitForLuaSync)
+
+			ensureRequest(f, "foo.com")
+
+			var newNginxConfig string
+			f.WaitForNginxConfiguration(func(cfg string) bool {
+				newNginxConfig = cfg
+				return true
+			})
+			Expect(nginxConfig).Should(Equal(newNginxConfig))
+
+			err = framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", 0, nil)
+
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(waitForLuaSync)
+
+			ensureRequestWithStatus(f, "foo.com", 503)
+		})
+
 		It("handles an annotation change", func() {
 			var nginxConfig string
 			f.WaitForNginxConfiguration(func(cfg string) bool {
@@ -173,6 +202,15 @@ func ensureRequest(f *framework.Framework, host string) {
 		End()
 	Expect(errs).Should(BeEmpty())
 	Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+}
+
+func ensureRequestWithStatus(f *framework.Framework, host string, statusCode int) {
+	resp, _, errs := gorequest.New().
+		Get(f.IngressController.HTTPURL).
+		Set("Host", host).
+		End()
+	Expect(errs).Should(BeEmpty())
+	Expect(resp.StatusCode).Should(Equal(statusCode))
 }
 
 func ensureHTTPSRequest(url string, host string, expectedDNSName string) {
