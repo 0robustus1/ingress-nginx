@@ -141,7 +141,8 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 
 			expectedFailureResponseCode := runRequest(f, "scaling.foo.com")
 
-			Expect(expectedFailureResponseCode).To(SatisfyAll(Equal(503), Equal(originalResponseCode)), "Expected both empty service and downscaled replicaset to return 503 responses.")
+			Expect(originalResponseCode).To(Equal(503), "Expected empty service to return 503 response.")
+			Expect(expectedFailureResponseCode).To(Equal(503), "Expected downscaled replicaset to return 503 response.")
 			Expect(expectedSuccessResponseCode).To(Equal(200), "Expected intermediate scaled replicaset to return a 200 response.")
 		})
 
