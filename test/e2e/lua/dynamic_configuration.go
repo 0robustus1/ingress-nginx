@@ -121,6 +121,29 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 			ensureRequestWithStatus(f, "foo.com", 503)
 		})
 
+		It("handles endpoints only changes consistently (down scaling of replicas vs. empty service)", func() {
+			replicas := 0
+			err := framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", replicas, nil)
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(waitForLuaSync * 2)
+
+			ensureRequestWithStatus(f, "foo.com", 503)
+
+			replicas = 2
+			err = framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", replicas, nil)
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(waitForLuaSync * 2)
+
+			ensureRequest(f, "foo.com")
+
+			replicas = 0
+			err = framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", replicas, nil)
+			Expect(err).NotTo(HaveOccurred())
+			time.Sleep(waitForLuaSync * 2)
+
+			ensureRequestWithStatus(f, "foo.com", 503)
+		})
+
 		It("handles an annotation change", func() {
 			var nginxConfig string
 			f.WaitForNginxConfiguration(func(cfg string) bool {
