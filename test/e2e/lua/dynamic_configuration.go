@@ -127,8 +127,8 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 			ensureIngress(f, "scaling-echo.example.com", deploymentName)
 			originalResponseCode := runRequest(f, "scaling-echo.example.com")
 
-			replicas = 2
-			err = framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, deploymentName, replicas, nil)
+			replicas := 2
+			err := framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, deploymentName, replicas, nil)
 			Expect(err).NotTo(HaveOccurred())
 			time.Sleep(waitForLuaSync * 2)
 
