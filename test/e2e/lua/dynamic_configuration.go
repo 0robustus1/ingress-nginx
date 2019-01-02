@@ -122,24 +122,24 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 		})
 
 		It("handles endpoints only changes consistently (down scaling of replicas vs. empty service)", func() {
-			deploymentName := "scaling-echo"
+			deploymentName := "scalingecho"
 			f.NewEchoDeploymentWithNameAndReplicas(deploymentName, 0)
-			ensureIngress(f, "scaling-echo.example.com", deploymentName)
-			originalResponseCode := runRequest(f, "scaling-echo.example.com")
+			createIngress(f, "scaling.foo.com", deploymentName)
+			originalResponseCode := runRequest(f, "scaling.foo.com")
 
 			replicas := 2
 			err := framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, deploymentName, replicas, nil)
 			Expect(err).NotTo(HaveOccurred())
 			time.Sleep(waitForLuaSync * 2)
 
-			expectedSuccessResponseCode := runRequest(f, "scaling-echo.example.com")
+			expectedSuccessResponseCode := runRequest(f, "scaling.foo.com")
 
 			replicas = 0
 			err = framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, deploymentName, replicas, nil)
 			Expect(err).NotTo(HaveOccurred())
 			time.Sleep(waitForLuaSync * 2)
 
-			expectedFailureResponseCode := runRequest(f, "scaling-echo.example.com")
+			expectedFailureResponseCode := runRequest(f, "scaling.foo.com")
 
 			Expect(expectedFailureResponseCode).To(SatisfyAll(Equal(503), Equal(originalResponseCode)), "Expected both empty service and downscaled replicaset to return 503 responses.")
 			Expect(expectedSuccessResponseCode).To(Equal(200), "Expected intermediate scaled replicaset to return a 200 response.")
@@ -205,6 +205,14 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 })
 
 func ensureIngress(f *framework.Framework, host string, deploymentName string) *extensions.Ingress {
+	ing := createIngress(f, host, deploymentName)
+	time.Sleep(waitForLuaSync)
+	ensureRequest(f, host)
+
+	return ing
+}
+
+func createIngress(f *framework.Framework, host string, deploymentName string) *extensions.Ingress {
 	ing := f.EnsureIngress(framework.NewSingleIngress(host, "/", host, f.IngressController.Namespace, deploymentName, 80,
 		&map[string]string{"nginx.ingress.kubernetes.io/load-balance": "ewma"}))
 
@@ -213,8 +221,6 @@ func ensureIngress(f *framework.Framework, host string, deploymentName string) *
 			return strings.Contains(server, fmt.Sprintf("server_name %s ;", host)) &&
 				strings.Contains(server, "proxy_pass http://upstream_balancer;")
 		})
-	time.Sleep(waitForLuaSync)
-	ensureRequest(f, host)
 
 	return ing
 }
