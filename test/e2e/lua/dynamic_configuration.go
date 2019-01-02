@@ -102,7 +102,7 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 			replicas := 2
 			err := framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", replicas, nil)
 			Expect(err).NotTo(HaveOccurred())
-			time.Sleep(waitForLuaSync)
+			time.Sleep(waitForLuaSync * 2)
 
 			ensureRequest(f, "foo.com")
 
@@ -116,7 +116,7 @@ var _ = framework.IngressNginxDescribe("Dynamic Configuration", func() {
 			err = framework.UpdateDeployment(f.KubeClientSet, f.IngressController.Namespace, "http-svc", 0, nil)
 
 			Expect(err).NotTo(HaveOccurred())
-			time.Sleep(waitForLuaSync)
+			time.Sleep(waitForLuaSync * 2)
 
 			ensureRequestWithStatus(f, "foo.com", 503)
 		})
